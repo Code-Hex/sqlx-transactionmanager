@@ -3,10 +3,16 @@ package sqlx
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"sync"
 	"sync/atomic"
 
 	sqlxx "github.com/jmoiron/sqlx"
+)
+
+var (
+	errRollBack = errors.New("")
+	errCommit   = errors.New("")
 )
 
 type DB struct {
@@ -40,11 +46,11 @@ func Open(driverName, dataSourceName string) (*DB, error) {
 func (db *DB) Close() error { return db.DB.Close() }
 
 func (db *DB) setTx(tx *sqlxx.Tx) {
-	db.counter.incrementTx()
 	db.pool.Put(&Txm{Tx: tx})
 }
 
 func (db *DB) getTxm() *Txm {
+	db.counter.incrementTx()
 	return db.pool.Get().(*Txm)
 }
 
@@ -100,13 +106,10 @@ func (t *Txm) Commit() error {
 }
 
 func (t *Txm) Rollback() error {
-	t.mutex.Lock()
 	if t.counter.HasActiveTx() {
 		t.counter.decrementTx()
-		t.mutex.Unlock()
 		return nil
 	}
-	t.mutex.Unlock()
 	return t.Tx.Rollback()
 }
 
