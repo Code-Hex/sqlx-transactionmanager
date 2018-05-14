@@ -49,19 +49,21 @@ func MustOpen(driverName, dataSourceName string) *DB {
 	return db
 }
 
-func (db *DB) Close() error { return db.DB.Close() }
+func (db *DB) Close() error {
+	return db.DB.Close()
+}
 
 func (db *DB) setTx(tx *sqlxx.Tx) {
 	db.pool.Put(&Txm{Tx: tx, activeTx: db.activeTx})
 }
 
 func (db *DB) getTxm() *Txm {
-	db.activeTx.incrementTx()
+	db.activeTx.increment()
 	return db.pool.Get().(*Txm)
 }
 
 func (db *DB) BeginTxm() (*Txm, error) {
-	if !db.activeTx.HasActiveTx() {
+	if !db.activeTx.has() {
 		tx, err := db.DB.Beginx()
 		if err != nil {
 			return nil, err
@@ -81,7 +83,7 @@ func (db *DB) MustBeginTxm() *Txm {
 }
 
 func (db *DB) BeginTxxm(ctx context.Context, opts *sql.TxOptions) (*Txm, error) {
-	if !db.activeTx.HasActiveTx() {
+	if !db.activeTx.has() {
 		tx, err := db.BeginTxx(ctx, opts)
 		if err != nil {
 			return nil, err
@@ -101,16 +103,20 @@ func (db *DB) MustBeginTxxm(ctx context.Context, opts *sql.TxOptions) (*Txm, err
 }
 
 func (t *Txm) Commit() error {
-	t.activeTx.decrementTx()
-	if t.activeTx.HasActiveTx() {
+	if !t.activeTx.has() {
 		return nil
+	}
+	t.activeTx.decrement()
+	if t.rollbacked.already() {
+		return new(NestedCommitErr)
 	}
 	return t.Tx.Commit()
 }
 
 func (t *Txm) Rollback() error {
-	if t.activeTx.HasActiveTx() {
-		t.activeTx.decrementTx()
+	t.activeTx.decrement()
+	if t.activeTx.has() {
+		t.rollbacked.increment()
 		return nil
 	}
 	return t.Tx.Rollback()
@@ -120,7 +126,7 @@ func (r *rollbacked) String() string {
 	return fmt.Sprintf("rollbacked in nested transaction: %d", r.times())
 }
 
-func (r *rollbacked) incrementRollback() {
+func (r *rollbacked) increment() {
 	atomic.AddUint64(&r.count, 1)
 }
 
@@ -128,28 +134,28 @@ func (r *rollbacked) times() uint64 {
 	return atomic.LoadUint64(&r.count)
 }
 
-func (r *rollbacked) IsRollbacked() bool {
+func (r *rollbacked) already() bool {
 	return r.times() > 0
 }
 
 func (a *activeTx) String() string {
-	return fmt.Sprintf("active tx counter: %d", a.getActiveTx())
+	return fmt.Sprintf("active tx counter: %d", a.get())
 }
 
-func (a *activeTx) incrementTx() {
+func (a *activeTx) increment() {
 	atomic.AddUint64(&a.count, 1)
 }
 
-func (a *activeTx) decrementTx() {
-	if a.HasActiveTx() {
+func (a *activeTx) decrement() {
+	if a.has() {
 		atomic.AddUint64(&a.count, ^uint64(0))
 	}
 }
 
-func (a *activeTx) getActiveTx() uint64 {
+func (a *activeTx) get() uint64 {
 	return atomic.LoadUint64(&a.count)
 }
 
-func (a *activeTx) HasActiveTx() bool {
-	return a.getActiveTx() > 0
+func (a *activeTx) has() bool {
+	return a.get() > 0
 }
