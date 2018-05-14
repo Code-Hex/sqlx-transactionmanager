@@ -3,29 +3,21 @@ package sqlx
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"sync"
 	"sync/atomic"
 
 	sqlxx "github.com/jmoiron/sqlx"
 )
 
-var (
-	errRollBack = errors.New("")
-	errCommit   = errors.New("")
-)
-
 type DB struct {
 	*sqlxx.DB
-	mutex sync.Mutex
-	pool  sync.Pool
+	pool sync.Pool
 
 	counter *activeTx
 }
 
 type Txm struct {
 	*sqlxx.Tx
-	mutex sync.Mutex
 
 	counter *activeTx
 }
@@ -55,8 +47,6 @@ func (db *DB) getTxm() *Txm {
 }
 
 func (db *DB) BeginTxm() (*Txm, error) {
-	db.mutex.Lock()
-	defer db.mutex.Unlock()
 	if !db.counter.HasActiveTx() {
 		tx, err := db.DB.Beginx()
 		if err != nil {
@@ -77,8 +67,6 @@ func (db *DB) MustBeginTxm() *Txm {
 }
 
 func (db *DB) BeginTxxm(ctx context.Context, opts *sql.TxOptions) (*Txm, error) {
-	db.mutex.Lock()
-	defer db.mutex.Unlock()
 	if !db.counter.HasActiveTx() {
 		tx, err := db.BeginTxx(ctx, opts)
 		if err != nil {

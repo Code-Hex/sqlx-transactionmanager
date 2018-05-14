@@ -1,9 +1,7 @@
 package sqlx
 
-type RollbackErr struct{}
+type NestedRollbackErr struct{}
 
-func (r *RollbackErr) Error() string { return "" }
-
-type CommitErr struct{}
-
-func (c *CommitErr) Error() string { return "" }
+func (r *NestedRollbackErr) Error() string {
+	return "Tried to commit but already rollbacked in nested transaction"
+}
