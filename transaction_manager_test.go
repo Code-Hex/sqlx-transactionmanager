@@ -134,8 +134,8 @@ func TestCommit(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		tx.MustExec("INSERT INTO person (first_name, last_name, email) VALUES (?, ?, ?)", "Code", "Hex", "x00.x7f@gmail.com")
-		tx.MustExec("UPDATE person SET email = ? WHERE first_name = ? AND last_name = ?", "a@b.com", "Code", "Hex")
+		tx.MustExec(tx.Rebind("INSERT INTO person (first_name, last_name, email) VALUES (?, ?, ?)"), "Code", "Hex", "x00.x7f@gmail.com")
+		tx.MustExec(tx.Rebind("UPDATE person SET email = ? WHERE first_name = ? AND last_name = ?"), "a@b.com", "Code", "Hex")
 		if err := tx.Commit(); err != nil {
 			t.Fatal(err)
 		}
@@ -152,8 +152,8 @@ func TestCommit(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		tx2.MustExec("INSERT INTO person (first_name, last_name, email) VALUES (?, ?, ?)", "Al", "paca", "kei@gmail.com")
-		tx2.MustExec("UPDATE person SET email = ? WHERE first_name = ? AND last_name = ?", "c@d.com", "Al", "paca")
+		tx2.MustExec(tx.Rebind("INSERT INTO person (first_name, last_name, email) VALUES (?, ?, ?)"), "Al", "paca", "kei@gmail.com")
+		tx2.MustExec(tx.Rebind("UPDATE person SET email = ? WHERE first_name = ? AND last_name = ?"), "c@d.com", "Al", "paca")
 		if err := tx2.Commit(); err != nil {
 			t.Fatal(err)
 		}
@@ -174,8 +174,8 @@ func TestRollback(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		tx.MustExec("INSERT INTO person (first_name, last_name, email) VALUES (?, ?, ?)", "Code", "Hex", "x00.x7f@gmail.com")
-		tx.MustExec("UPDATE person SET email = ? WHERE first_name = ? AND last_name = ?", "a@b.com", "Code", "Hex")
+		tx.MustExec(tx.Rebind("INSERT INTO person (first_name, last_name, email) VALUES (?, ?, ?)"), "Code", "Hex", "x00.x7f@gmail.com")
+		tx.MustExec(tx.Rebind("UPDATE person SET email = ? WHERE first_name = ? AND last_name = ?"), "a@b.com", "Code", "Hex")
 		if err := tx.Rollback(); err != nil {
 			t.Fatal(err)
 		}
@@ -207,8 +207,8 @@ func TestNestedCommit(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		tx.MustExec("INSERT INTO person (first_name, last_name, email) VALUES (?, ?, ?)", "Code", "Hex", "x00.x7f@gmail.com")
-		tx.MustExec("UPDATE person SET email = ? WHERE first_name = ? AND last_name = ?", "a@b.com", "Code", "Hex")
+		tx.MustExec(tx.Rebind("INSERT INTO person (first_name, last_name, email) VALUES (?, ?, ?)"), "Code", "Hex", "x00.x7f@gmail.com")
+		tx.MustExec(tx.Rebind("UPDATE person SET email = ? WHERE first_name = ? AND last_name = ?"), "a@b.com", "Code", "Hex")
 
 		// I will try begin 4 times
 		nested(db)
@@ -266,8 +266,8 @@ func TestNestedRollback(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		tx.MustExec("INSERT INTO person (first_name, last_name, email) VALUES (?, ?, ?)", "Code", "Hex", "x00.x7f@gmail.com")
-		tx.MustExec("UPDATE person SET email = ? WHERE first_name = ? AND last_name = ?", "a@b.com", "Code", "Hex")
+		tx.MustExec(tx.Rebind("INSERT INTO person (first_name, last_name, email) VALUES (?, ?, ?)"), "Code", "Hex", "x00.x7f@gmail.com")
+		tx.MustExec(tx.Rebind("UPDATE person SET email = ? WHERE first_name = ? AND last_name = ?"), "a@b.com", "Code", "Hex")
 
 		// I will try begin 4 times
 		nested(db)
