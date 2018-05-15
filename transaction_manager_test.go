@@ -147,6 +147,24 @@ func TestCommit(t *testing.T) {
 		if author.FirstName != "Code" || author.LastName != "Hex" {
 			t.Fatal("Failed to test commit")
 		}
+
+		tx2, err := db.BeginTxm()
+		if err != nil {
+			t.Fatal(err)
+		}
+		tx2.MustExec("INSERT INTO person (first_name, last_name, email) VALUES (?, ?, ?)", "Al", "paca", "kei@gmail.com")
+		tx2.MustExec("UPDATE person SET email = ? WHERE first_name = ? AND last_name = ?", "c@d.com", "Al", "paca")
+		if err := tx2.Commit(); err != nil {
+			t.Fatal(err)
+		}
+
+		var author2 Person
+		if err := db.Get(&author2, "SELECT * FROM person WHERE email = ?", "c@d.com"); err != nil {
+			t.Fatal(errors.Wrap(err, db.activeTx.String()))
+		}
+		if author2.FirstName != "Al" || author2.LastName != "paca" {
+			t.Fatal("Failed to test commit2")
+		}
 	})
 }
 
