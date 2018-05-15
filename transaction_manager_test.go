@@ -212,18 +212,83 @@ func TestNestedCommit(t *testing.T) {
 		}
 		nestedmore(db)
 
-		var author Person
-		if err := db.Get(&author, "SELECT * FROM person WHERE email = ?", "a@b.com"); err != sql.ErrNoRows {
-			t.Fatal(errors.Wrapf(err, "rollback test is failed, %s", db.activeTx.String()))
-		}
 		// Original begin + 4 times of nested begin
 		for i := 0; i < 5; i++ {
 			if err := tx.Commit(); err != nil {
 				t.Fatal(err)
 			}
 		}
+		var author Person
+		if err := db.Get(&author, "SELECT * FROM person WHERE email = ?", "a@b.com"); err != nil {
+			t.Fatal(errors.Wrapf(err, "nested transaction test is failed, %s", db.activeTx.String()))
+		}
 		if err := tx.Commit(); err != sql.ErrTxDone {
 			t.Fatal("Failed to cause error for already commited")
+		}
+	})
+}
+
+func TestNestedRollback(t *testing.T) {
+	nested := func(db *DB) {
+		tx, err := db.BeginTxm()
+		if err != nil {
+			if _, ok := err.(*NestedBeginTxErr); !ok {
+				t.Fatal(err)
+			}
+		}
+		if tx == nil {
+			t.Fatal("Failed to return tx")
+		}
+		if !tx.activeTx.has() {
+			t.Fatal("Failed having active transaction in nested BEGIN")
+		}
+	}
+	RunWithSchema(defaultSchema, t, func(db *DB, t *testing.T) {
+		tx, err := db.BeginTxm()
+		if err != nil {
+			t.Fatal(err)
+		}
+		tx.MustExec("INSERT INTO person (first_name, last_name, email) VALUES (?, ?, ?)", "Code", "Hex", "x00.x7f@gmail.com")
+		tx.MustExec("UPDATE person SET email = ? WHERE first_name = ? AND last_name = ?", "a@b.com", "Code", "Hex")
+
+		// I will try begin 4 times
+		nested(db)
+		nested(db)
+		nestedmore := func(db *DB) {
+			tx, err := db.BeginTxm()
+			if err != nil {
+				if _, ok := err.(*NestedBeginTxErr); !ok {
+					t.Fatal(err)
+				}
+			}
+			nested(db)
+			if tx == nil {
+				t.Fatal("Failed to return tx")
+			}
+			if !tx.activeTx.has() {
+				t.Fatal("Failed having active transaction in nested BEGIN")
+			}
+		}
+		nestedmore(db)
+
+		tx.Rollback() // count rollbacked +1, It will not rollback
+
+		if tx.rollbacked.times() != 1 {
+			t.Fatalf("Failed to count rollbacked: %d, expected 1", tx.rollbacked.times())
+		}
+
+		// 4 times of nested begin
+		for i := 0; i < 4; i++ {
+			if e, ok := tx.Commit().(*NestedCommitErr); e == nil || !ok {
+				t.Fatal("Failed to get nested commit err")
+			}
+		}
+
+		tx.Rollback() // activeTx count is 0, So it will rollback
+
+		var author Person
+		if err := db.Get(&author, "SELECT * FROM person WHERE email = ?", "a@b.com"); err != sql.ErrNoRows {
+			t.Fatal(errors.Wrapf(err, "rollback test is failed, %s", db.activeTx.String()))
 		}
 	})
 }
