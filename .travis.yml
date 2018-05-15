@@ -24,4 +24,6 @@ go:
 
 # run tests w/ coverage
 script:
-  - travis_retry $GOPATH/bin/goveralls -service=travis-ci
+  - go test -cover
+  - travis_retry $GOPATH/bin/goveralls -package "." -service=travis-ci
+
