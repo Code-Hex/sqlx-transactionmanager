@@ -173,9 +173,16 @@ func TestNestedCommit(t *testing.T) {
 	nested := func(db *DB) {
 		tx, err := db.BeginTxm()
 		if err != nil {
-			t.Fatal(err)
+			if _, ok := err.(*NestedBeginTxErr); !ok {
+				t.Fatal(err)
+			}
 		}
-
+		if tx == nil {
+			t.Fatal("Failed to return tx")
+		}
+		if !tx.activeTx.has() {
+			t.Fatal("Failed having active transaction in nested BEGIN")
+		}
 	}
 	RunWithSchema(defaultSchema, t, func(db *DB, t *testing.T) {
 		tx, err := db.BeginTxm()
@@ -184,13 +191,36 @@ func TestNestedCommit(t *testing.T) {
 		}
 		tx.MustExec("INSERT INTO person (first_name, last_name, email) VALUES (?, ?, ?)", "Code", "Hex", "x00.x7f@gmail.com")
 		tx.MustExec("UPDATE person SET email = ? WHERE first_name = ? AND last_name = ?", "a@b.com", "Code", "Hex")
-		if err := tx.Rollback(); err != nil {
-			t.Fatal(err)
+
+		// I will try begin 4 times
+		nested(db)
+		nested(db)
+		nestedmore := func(db *DB) {
+			tx, err := db.BeginTxm()
+			if err != nil {
+				if _, ok := err.(*NestedBeginTxErr); !ok {
+					t.Fatal(err)
+				}
+			}
+			nested(db)
+			if tx == nil {
+				t.Fatal("Failed to return tx")
+			}
+			if !tx.activeTx.has() {
+				t.Fatal("Failed having active transaction in nested BEGIN")
+			}
 		}
+		nestedmore(db)
 
 		var author Person
 		if err := db.Get(&author, "SELECT * FROM person WHERE email = ?", "a@b.com"); err != sql.ErrNoRows {
 			t.Fatal(errors.Wrapf(err, "rollback test is failed, %s", db.activeTx.String()))
+		}
+		// Original begin + 4 times of nested begin
+		for i := 0; i < 5; i++ {
+			if err := tx.Commit(); err != nil {
+				t.Fatal(err)
+			}
 		}
 	})
 }

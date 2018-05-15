@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"sync"
 	"sync/atomic"
 
 	sqlxx "github.com/jmoiron/sqlx"
@@ -12,7 +11,7 @@ import (
 
 type DB struct {
 	*sqlxx.DB
-	pool sync.Pool
+	tx *Txm
 
 	rollbacked *rollbacked
 	activeTx   *activeTx
@@ -54,12 +53,16 @@ func (db *DB) Close() error {
 }
 
 func (db *DB) setTx(tx *sqlxx.Tx) {
-	db.pool.Put(&Txm{Tx: tx, activeTx: db.activeTx})
+	db.tx = &Txm{
+		Tx:         tx,
+		activeTx:   db.activeTx,
+		rollbacked: &rollbacked{},
+	}
 }
 
 func (db *DB) getTxm() *Txm {
 	db.activeTx.increment()
-	return db.pool.Get().(*Txm)
+	return db.tx
 }
 
 func (db *DB) BeginTxm() (*Txm, error) {
@@ -76,7 +79,7 @@ func (db *DB) BeginTxm() (*Txm, error) {
 
 func (db *DB) MustBeginTxm() *Txm {
 	txm, err := db.BeginTxm()
-	if e, ok := err.(*NestedBeginTxErr); !ok && e != nil {
+	if err != nil {
 		panic(err)
 	}
 	return txm
@@ -96,7 +99,7 @@ func (db *DB) BeginTxxm(ctx context.Context, opts *sql.TxOptions) (*Txm, error) 
 
 func (db *DB) MustBeginTxxm(ctx context.Context, opts *sql.TxOptions) (*Txm, error) {
 	txm, err := db.BeginTxxm(ctx, opts)
-	if e, ok := err.(*NestedBeginTxErr); !ok && e != nil {
+	if err != nil {
 		panic(err)
 	}
 	return txm, nil
@@ -106,11 +109,14 @@ func (t *Txm) Commit() error {
 	if !t.activeTx.has() {
 		return nil
 	}
-	t.activeTx.decrement()
 	if t.rollbacked.already() {
 		return new(NestedCommitErr)
 	}
-	return t.Tx.Commit()
+	t.activeTx.decrement()
+	if !t.activeTx.has() {
+		return t.Tx.Commit()
+	}
+	return nil
 }
 
 func (t *Txm) Rollback() error {
