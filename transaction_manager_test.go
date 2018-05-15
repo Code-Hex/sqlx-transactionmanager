@@ -222,5 +222,8 @@ func TestNestedCommit(t *testing.T) {
 				t.Fatal(err)
 			}
 		}
+		if err := tx.Commit(); err != sql.ErrTxDone {
+			t.Fatal("Failed to cause error for already commited")
+		}
 	})
 }

@@ -106,9 +106,6 @@ func (db *DB) MustBeginTxxm(ctx context.Context, opts *sql.TxOptions) (*Txm, err
 }
 
 func (t *Txm) Commit() error {
-	if !t.activeTx.has() {
-		return nil
-	}
 	if t.rollbacked.already() {
 		return new(NestedCommitErr)
 	}
