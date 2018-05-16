@@ -103,11 +103,13 @@ CREATE TABLE person (
 	email text,
 	added_at timestamp default now()
 );
+
 CREATE TABLE place (
 	country text,
 	city text NULL,
 	telcode integer
 );
+
 `,
 	drop: `
 drop table person;
