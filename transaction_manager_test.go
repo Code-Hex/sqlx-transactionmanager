@@ -137,13 +137,13 @@ func TestCommit(t *testing.T) {
 			t.Fatal(err)
 		}
 		tx.MustExec(tx.Rebind("INSERT INTO person (first_name, last_name, email) VALUES (?, ?, ?)"), "Code", "Hex", "x00.x7f@gmail.com")
-		tx.MustExec(tx.Rebind("UPDATE person SET email=? WHERE first_name=? AND last_name=?"), "a@b.com", "Code", "Hex")
+		tx.MustExec(tx.Rebind("UPDATE person SET email = ? WHERE first_name = ? AND last_name = ?"), "a@b.com", "Code", "Hex")
 		if err := tx.Commit(); err != nil {
 			t.Fatal(err)
 		}
 
 		var author Person
-		if err := db.Get(&author, "SELECT * FROM person WHERE email=?", "a@b.com"); err != nil {
+		if err := db.Get(&author, "SELECT * FROM person LIMIT 1"); err != nil {
 			t.Fatal(errors.Wrap(err, db.activeTx.String()))
 		}
 		if author.FirstName != "Code" || author.LastName != "Hex" {
@@ -154,14 +154,15 @@ func TestCommit(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+		tx2.MustExec(tx.Rebind("DELETE FROM person"))
 		tx2.MustExec(tx.Rebind("INSERT INTO person (first_name, last_name, email) VALUES (?, ?, ?)"), "Al", "paca", "kei@gmail.com")
-		tx2.MustExec(tx.Rebind("UPDATE person SET email=? WHERE first_name=? AND last_name=?"), "c@d.com", "Al", "paca")
+		tx2.MustExec(tx.Rebind("UPDATE person SET email = ? WHERE first_name = ? AND last_name = ?"), "c@d.com", "Al", "paca")
 		if err := tx2.Commit(); err != nil {
 			t.Fatal(err)
 		}
 
 		var author2 Person
-		if err := db.Get(&author2, "SELECT * FROM person WHERE email=?", "c@d.com"); err != nil {
+		if err := db.Get(&author2, "SELECT * FROM person LIMIT 1"); err != nil {
 			t.Fatal(errors.Wrap(err, db.activeTx.String()))
 		}
 		if author2.FirstName != "Al" || author2.LastName != "paca" {
