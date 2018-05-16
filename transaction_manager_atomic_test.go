@@ -1,10 +1,6 @@
 package sqlx
 
-import (
-	"sync"
-	"testing"
-)
-
+/*
 func TestAtomicCount(t *testing.T) {
 	RunWithSchema(defaultSchema, t, func(db *DB, t *testing.T) {
 		tx, err := db.BeginTxm()
@@ -49,3 +45,4 @@ func TestAtomicCount(t *testing.T) {
 		}
 	})
 }
+*/
