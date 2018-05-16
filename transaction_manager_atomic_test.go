@@ -1,6 +1,10 @@
 package sqlx
 
-/*
+import (
+	"sync"
+	"testing"
+)
+
 func TestAtomicCount(t *testing.T) {
 	RunWithSchema(defaultSchema, t, func(db *DB, t *testing.T) {
 		tx, err := db.BeginTxm()
@@ -8,7 +12,7 @@ func TestAtomicCount(t *testing.T) {
 			t.Fatal(err)
 		}
 		var wg sync.WaitGroup
-		times := 1000
+		times := 1000000
 		for i := 1; i < times; i++ {
 			wg.Add(1)
 			go func(d *DB) {
@@ -45,4 +49,3 @@ func TestAtomicCount(t *testing.T) {
 		}
 	})
 }
-*/

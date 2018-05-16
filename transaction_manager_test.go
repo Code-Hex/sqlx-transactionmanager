@@ -297,14 +297,26 @@ func TestNestedRollback(t *testing.T) {
 			t.Fatalf("Failed to count rollbacked: %d, expected 1", tx.rollbacked.times())
 		}
 
+		if e, ok := tx.Commit().(*NestedCommitErr); e == nil || !ok {
+			t.Fatal("Failed to get nested commit err")
+		}
+
+		tx.rollbacked.reset()
+
 		// 4 times of nested begin
-		for i := 0; i < 4; i++ {
-			if e, ok := tx.Commit().(*NestedCommitErr); e == nil || !ok {
-				t.Fatal("Failed to get nested commit err")
+		// We should stop when count is 1
+		// because rollback can be done per transaction
+		for i := 1; i < 4; i++ {
+			if err := tx.Commit(); err != nil {
+				t.Fatal(err)
 			}
 		}
 
-		tx.Rollback() // activeTx count is 0, So it will rollback
+		if tx.activeTx.get() != 1 {
+			t.Fatalf("Failed to decrease count: %s", tx.activeTx.String())
+		}
+
+		tx.Rollback() // activeTx count is 1, So it will rollback
 
 		var author Person
 		if err := db.Get(&author, "SELECT * FROM person LIMIT 1"); err != sql.ErrNoRows {

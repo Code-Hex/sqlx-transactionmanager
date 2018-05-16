@@ -117,6 +117,9 @@ func (t *Txm) Commit() error {
 }
 
 func (t *Txm) Rollback() error {
+	if !t.activeTx.has() {
+		return nil
+	}
 	t.activeTx.decrement()
 	if t.activeTx.has() {
 		t.rollbacked.increment()
@@ -125,8 +128,31 @@ func (t *Txm) Rollback() error {
 	return t.Tx.Rollback()
 }
 
+func (t *Txm) MustRollback() {
+	defer t.reset()
+	if err := t.Tx.Rollback(); err != nil {
+		panic(err)
+	}
+}
+
+func (t *Txm) MustCommit() {
+	defer t.reset()
+	if err := t.Tx.Commit(); err != nil {
+		panic(err)
+	}
+}
+
+func (t *Txm) reset() {
+	t.rollbacked.reset()
+	t.activeTx.reset()
+}
+
 func (r *rollbacked) String() string {
 	return fmt.Sprintf("rollbacked in nested transaction: %d", r.times())
+}
+
+func (r *rollbacked) reset() {
+	atomic.StoreUint64(&r.count, 0)
 }
 
 func (r *rollbacked) increment() {
@@ -143,6 +169,10 @@ func (r *rollbacked) already() bool {
 
 func (a *activeTx) String() string {
 	return fmt.Sprintf("active tx counter: %d", a.get())
+}
+
+func (a *activeTx) reset() {
+	atomic.StoreUint64(&a.count, 0)
 }
 
 func (a *activeTx) increment() {
