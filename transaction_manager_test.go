@@ -244,7 +244,7 @@ func TestNestedCommit(t *testing.T) {
 			t.Fatal(errors.Wrapf(err, "nested transaction test is failed, %s", db.activeTx.String()))
 		}
 		if err := tx.Commit(); err != sql.ErrTxDone {
-			t.Fatal("Failed to cause error for already commited")
+			t.Fatal("Failed to cause error for already committed")
 		}
 	})
 }
