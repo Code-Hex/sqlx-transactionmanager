@@ -12,8 +12,8 @@ before_install:
   - mysql -e 'CREATE DATABASE IF NOT EXISTS sqlxtest;'
   - psql -c 'create database sqlxtest;' -U postgres
   - export SQLX_MYSQL_DSN="travis:@/sqlxtest?parseTime=true"
-  - export SQLX_POSTGRES_DSN=skip
-  - export SQLX_SQLITE_DSN=skip
+  - export SQLX_POSTGRES_DSN="postgres://postgres:@localhost/sqlxtest?sslmode=disable"
+  - export SQLX_SQLITE_DSN="$HOME/sqlxtest.db"
 
 # go versions to test
 go:
@@ -24,6 +24,6 @@ go:
 
 # run tests w/ coverage
 script:
-  - go test -cover
+  - go test -v -cover
   - travis_retry $GOPATH/bin/goveralls -package "." -service=travis-ci
 
