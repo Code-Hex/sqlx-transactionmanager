@@ -175,13 +175,13 @@ func TestRollback(t *testing.T) {
 			t.Fatal(err)
 		}
 		tx.MustExec(tx.Rebind("INSERT INTO person (first_name, last_name, email) VALUES (?, ?, ?)"), "Code", "Hex", "x00.x7f@gmail.com")
-		tx.MustExec(tx.Rebind("UPDATE person SET email=? WHERE first_name=? AND last_name=?"), "a@b.com", "Code", "Hex")
+		tx.MustExec(tx.Rebind("UPDATE person SET email = ? WHERE first_name = ? AND last_name = ?"), "a@b.com", "Code", "Hex")
 		if err := tx.Rollback(); err != nil {
 			t.Fatal(err)
 		}
 
 		var author Person
-		if err := db.Get(&author, "SELECT * FROM person WHERE email=?", "a@b.com"); err != sql.ErrNoRows {
+		if err := db.Get(&author, "SELECT * FROM person LIMIT 1"); err != sql.ErrNoRows {
 			t.Fatal(errors.Wrapf(err, "rollback test is failed, %s", db.activeTx.String()))
 		}
 	})
@@ -208,7 +208,7 @@ func TestNestedCommit(t *testing.T) {
 			t.Fatal(err)
 		}
 		tx.MustExec(tx.Rebind("INSERT INTO person (first_name, last_name, email) VALUES (?, ?, ?)"), "Code", "Hex", "x00.x7f@gmail.com")
-		tx.MustExec(tx.Rebind("UPDATE person SET email=? WHERE first_name=? AND last_name=?"), "a@b.com", "Code", "Hex")
+		tx.MustExec(tx.Rebind("UPDATE person SET email = ? WHERE first_name = ? AND last_name = ?"), "a@b.com", "Code", "Hex")
 
 		// I will try begin 4 times
 		nested(db)
@@ -237,7 +237,7 @@ func TestNestedCommit(t *testing.T) {
 			}
 		}
 		var author Person
-		if err := db.Get(&author, "SELECT * FROM person WHERE email=?", "a@b.com"); err != nil {
+		if err := db.Get(&author, "SELECT * FROM person LIMIT 1"); err != nil {
 			t.Fatal(errors.Wrapf(err, "nested transaction test is failed, %s", db.activeTx.String()))
 		}
 		if err := tx.Commit(); err != sql.ErrTxDone {
@@ -267,7 +267,7 @@ func TestNestedRollback(t *testing.T) {
 			t.Fatal(err)
 		}
 		tx.MustExec(tx.Rebind("INSERT INTO person (first_name, last_name, email) VALUES (?, ?, ?)"), "Code", "Hex", "x00.x7f@gmail.com")
-		tx.MustExec(tx.Rebind("UPDATE person SET email=? WHERE first_name=? AND last_name=?"), "a@b.com", "Code", "Hex")
+		tx.MustExec(tx.Rebind("UPDATE person SET email = ? WHERE first_name = ? AND last_name = ?"), "a@b.com", "Code", "Hex")
 
 		// I will try begin 4 times
 		nested(db)
@@ -305,7 +305,7 @@ func TestNestedRollback(t *testing.T) {
 		tx.Rollback() // activeTx count is 0, So it will rollback
 
 		var author Person
-		if err := db.Get(&author, "SELECT * FROM person WHERE email=?", "a@b.com"); err != sql.ErrNoRows {
+		if err := db.Get(&author, "SELECT * FROM person LIMIT 1"); err != sql.ErrNoRows {
 			t.Fatal(errors.Wrapf(err, "rollback test is failed, %s", db.activeTx.String()))
 		}
 	})

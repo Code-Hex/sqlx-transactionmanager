@@ -13,7 +13,7 @@ before_install:
   - psql -c 'create database sqlxtest;' -U postgres
   - export SQLX_MYSQL_DSN="travis:@/sqlxtest?parseTime=true"
   - export SQLX_POSTGRES_DSN=skip
-  - export SQLX_SQLITE_DSN="$HOME/sqlxtest.db"
+  - export SQLX_SQLITE_DSN=skip
 
 # go versions to test
 go:
