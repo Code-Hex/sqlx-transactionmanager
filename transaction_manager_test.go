@@ -48,31 +48,19 @@ func ConnectAll() {
 	}
 
 	if TestPostgres {
-		pgdb, err = Open("postgres", pgdsn)
-		if err != nil {
-			fmt.Printf("Disabling PG tests:\n%s%v\n", indent, err)
-			TestPostgres = false
-		}
+		pgdb = MustOpen("postgres", pgdsn)
 	} else {
 		fmt.Println("Disabling Postgres tests")
 	}
 
 	if TestMysql {
-		mysqldb, err = Open("mysql", mydsn)
-		if err != nil {
-			fmt.Printf("Disabling MySQL tests:\n%s%v", indent, err)
-			TestMysql = false
-		}
+		mysqldb = MustOpen("mysql", mydsn)
 	} else {
 		fmt.Println("Disabling MySQL tests")
 	}
 
 	if TestSqlite {
-		sldb, err = Open("sqlite3", sqdsn)
-		if err != nil {
-			fmt.Printf("Disabling SQLite:\n%s%v", indent, err)
-			TestSqlite = false
-		}
+		sldb = MustOpen("sqlite3", sqdsn)
 	} else {
 		fmt.Println("Disabling SQLite tests")
 	}
