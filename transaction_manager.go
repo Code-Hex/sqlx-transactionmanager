@@ -32,6 +32,9 @@ type rollbacked struct {
 	count uint64
 }
 
+// Open returns pointer of DB struct to manage transaction
+// It struct wrapped *github.com/jmoiron/sqlx.DB
+// So we can use some methods of *github.com/jmoiron/sqlx.DB
 func Open(driverName, dataSourceName string) (*DB, error) {
 	db, err := sqlxx.Open(driverName, dataSourceName)
 	if err != nil {
@@ -40,6 +43,8 @@ func Open(driverName, dataSourceName string) (*DB, error) {
 	return &DB{DB: db, activeTx: &activeTx{}}, err
 }
 
+// MustOpen returns only pointer of DB struct to manage transaction
+// But If you cause something error, It will do panic
 func MustOpen(driverName, dataSourceName string) *DB {
 	db, err := Open(driverName, dataSourceName)
 	if err != nil {
@@ -48,8 +53,15 @@ func MustOpen(driverName, dataSourceName string) *DB {
 	return db
 }
 
+// Close closes *github.com/jmoiron/sqlx.DB
 func (db *DB) Close() error {
 	return db.DB.Close()
+}
+
+// Sql returns *sql.DB
+// The reason for writing this method is that it needs to be written as db.DB.DB to access *sql.DB
+func (db *DB) Sql() *sql.DB {
+	return db.DB.DB
 }
 
 func (db *DB) setTx(tx *sqlxx.Tx) {
@@ -65,6 +77,7 @@ func (db *DB) getTxm() *Txm {
 	return db.tx
 }
 
+// BeginTxm returns pointer of transaction manager
 func (db *DB) BeginTxm() (*Txm, error) {
 	if !db.activeTx.has() {
 		tx, err := db.DB.Beginx()
