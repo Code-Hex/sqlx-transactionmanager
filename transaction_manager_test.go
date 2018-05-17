@@ -33,8 +33,6 @@ func init() {
 }
 
 func ConnectAll() {
-	var err error
-
 	pgdsn := os.Getenv("SQLX_POSTGRES_DSN")
 	mydsn := os.Getenv("SQLX_MYSQL_DSN")
 	sqdsn := os.Getenv("SQLX_SQLITE_DSN")
