@@ -56,10 +56,10 @@ func (db *DB) Close() error {
 	return db.DB.Close()
 }
 
-// Sql returns *sql.DB
+// SQL returns *sql.DB
 // The reason for writing this method is that it needs to be
 // written as *db.DB.DB to access *sql.DB.
-func (db *DB) Sql() *sql.DB {
+func (db *DB) SQL() *sql.DB {
 	return db.DB.DB
 }
 
