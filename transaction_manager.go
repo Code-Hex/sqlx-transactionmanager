@@ -9,6 +9,7 @@ import (
 	sqlxx "github.com/jmoiron/sqlx"
 )
 
+// DB is a wrapper around *github.com/jmoiron/sqlx.DB which manages transaction.
 type DB struct {
 	*sqlxx.DB
 	tx *Txm
@@ -17,6 +18,8 @@ type DB struct {
 	activeTx   *activeTx
 }
 
+// Txm is a wrapper around *github.com/jmoiron/sqlx.DB with extra functionality and
+// manages transaction.
 type Txm struct {
 	*sqlxx.Tx
 
@@ -24,13 +27,8 @@ type Txm struct {
 	activeTx   *activeTx
 }
 
-type activeTx struct {
-	count uint64
-}
-
-type rollbacked struct {
-	count uint64
-}
+type activeTx struct{ count uint64 }
+type rollbacked struct{ count uint64 }
 
 // Open returns pointer of DB struct to manage transaction.
 // It struct wrapped *github.com/jmoiron/sqlx.DB
