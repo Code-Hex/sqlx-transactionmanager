@@ -3,7 +3,6 @@ package sqlx
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"sync/atomic"
 
 	sqlxx "github.com/jmoiron/sqlx"
@@ -179,10 +178,6 @@ func (t *Txm) reset() {
 	t.activeTx.reset()
 }
 
-func (r *rollbacked) String() string {
-	return fmt.Sprintf("rollbacked in nested transaction: %d", r.times())
-}
-
 func (r *rollbacked) reset() {
 	atomic.StoreUint64(&r.count, 0)
 }
@@ -197,10 +192,6 @@ func (r *rollbacked) times() uint64 {
 
 func (r *rollbacked) already() bool {
 	return r.times() > 0
-}
-
-func (a *activeTx) String() string {
-	return fmt.Sprintf("active tx counter: %d", a.get())
 }
 
 func (a *activeTx) reset() {

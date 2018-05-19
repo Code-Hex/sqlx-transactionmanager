@@ -130,7 +130,13 @@ func TestCommit(t *testing.T) {
 
 		var author Person
 		if err := db.Get(&author, "SELECT * FROM person LIMIT 1"); err != nil {
-			t.Fatal(errors.Wrap(err, db.activeTx.String()))
+			t.Fatal(
+				errors.Wrapf(err, "commit test is failed\n    %s\n    %s\n",
+					fmt.Sprintf("rollbacked in nested transaction: %d", db.rollbacked.times()),
+					fmt.Sprintf("active tx counter: %d", db.activeTx.get()),
+				),
+			)
+
 		}
 		if author.FirstName != "Code" || author.LastName != "Hex" {
 			t.Fatal("Failed to test commit")
@@ -149,7 +155,12 @@ func TestCommit(t *testing.T) {
 
 		var author2 Person
 		if err := db.Get(&author2, "SELECT * FROM person LIMIT 1"); err != nil {
-			t.Fatal(errors.Wrap(err, db.activeTx.String()))
+			t.Fatal(
+				errors.Wrapf(err, "%s\n%s\n",
+					fmt.Sprintf("rollbacked in nested transaction: %d", db.rollbacked.times()),
+					fmt.Sprintf("active tx counter: %d", db.activeTx.get()),
+				),
+			)
 		}
 		if author2.FirstName != "Al" || author2.LastName != "paca" {
 			t.Fatal("Failed to test commit2")
@@ -171,7 +182,12 @@ func TestRollback(t *testing.T) {
 
 		var author Person
 		if err := db.Get(&author, "SELECT * FROM person LIMIT 1"); err != sql.ErrNoRows {
-			t.Fatal(errors.Wrapf(err, "rollback test is failed, %s", db.activeTx.String()))
+			t.Fatal(
+				errors.Wrapf(err, "rollback test is failed\n    %s\n    %s\n",
+					fmt.Sprintf("rollbacked in nested transaction: %d", db.rollbacked.times()),
+					fmt.Sprintf("active tx counter: %d", db.activeTx.get()),
+				),
+			)
 		}
 	})
 }
@@ -227,7 +243,12 @@ func TestNestedCommit(t *testing.T) {
 		}
 		var author Person
 		if err := db.Get(&author, "SELECT * FROM person LIMIT 1"); err != nil {
-			t.Fatal(errors.Wrapf(err, "nested transaction test is failed, %s", db.activeTx.String()))
+			t.Fatal(
+				errors.Wrapf(err, "nested transaction test is failed\n    %s\n    %s\n",
+					fmt.Sprintf("rollbacked in nested transaction: %d", db.rollbacked.times()),
+					fmt.Sprintf("active tx counter: %d", db.activeTx.get()),
+				),
+			)
 		}
 		if err := tx.Commit(); err != sql.ErrTxDone {
 			t.Fatal("Failed to cause error for already committed")
@@ -300,14 +321,19 @@ func TestNestedRollback(t *testing.T) {
 		}
 
 		if tx.activeTx.get() != 1 {
-			t.Fatalf("Failed to decrease count: %s", tx.activeTx.String())
+			t.Fatalf("Failed to decrease count: %d", tx.activeTx.get())
 		}
 
 		tx.Rollback() // activeTx count is 1, So it will rollback
 
 		var author Person
 		if err := db.Get(&author, "SELECT * FROM person LIMIT 1"); err != sql.ErrNoRows {
-			t.Fatal(errors.Wrapf(err, "rollback test is failed, %s", db.activeTx.String()))
+			t.Fatal(
+				errors.Wrapf(err, "rollback test is failed\n    %s\n    %s\n",
+					fmt.Sprintf("rollbacked in nested transaction: %d", db.rollbacked.times()),
+					fmt.Sprintf("active tx counter: %d", db.activeTx.get()),
+				),
+			)
 		}
 	})
 }
