@@ -44,7 +44,9 @@ fmt.Println(p)
 
 ## Description
 
-sqlx-transactionmanager is a simple transaction manager. This package provides nested transaction management on multi threads. 
+sqlx-transactionmanager is a simple transaction manager. This package provides nested transaction management on multi threads.
+
+See more details [example code](https://github.com/Code-Hex/sqlx-transactionmanager/blob/master/eg/main.go#L57-L87) if you want to know how to use this.
 
 ## Install
 
