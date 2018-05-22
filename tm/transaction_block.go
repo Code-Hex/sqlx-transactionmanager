@@ -8,10 +8,16 @@ import (
 )
 
 // SQL interface implements for *sql.DB or wrapped it.
-type SQL interface{ Begin() (*sql.Tx, error) }
+type SQL interface {
+	Begin() (*sql.Tx, error)
+	BeginTx(context.Context) (*sql.Tx, error)
+}
 
 // SQLx interface implements for *sqlx.DB or wrapped it.
-type SQLx interface{ Beginx() (*sqlx.Tx, error) }
+type SQLx interface {
+	Beginx() (*sqlx.Tx, error)
+	BeginTxx(context.Context) (*sqlx.Tx, error)
+}
 
 // Executor interface implements for *sql.Tx or wrapped it.
 // It has'nt Commit and Rollback methods.
@@ -79,11 +85,43 @@ func Run(db SQL, f TxnFunc) error {
 	return nil
 }
 
+// RunWithContext begins transaction with context.Conntext around TxnFunc.
+// It returns error and rollbacks if TxnFunc is failed.
+// It commits if TxnFunc is successed.
+func RunWithContext(ctx context.Context, db SQL, f TxnFunc) error {
+	tx, err := db.BeginTx(ctx)
+	if err != nil {
+		return err
+	}
+	if err := f(tx); err != nil {
+		tx.Rollback()
+		return err
+	}
+	tx.Commit()
+	return nil
+}
+
 // Runx begins transaction around TxnxFunc.
 // It returns error and rollbacks if TxnxFunc is failed.
 // It commits if TxnxFunc is successed.
 func Runx(db SQLx, f TxnxFunc) error {
 	tx, err := db.Beginx()
+	if err != nil {
+		return err
+	}
+	if err := f(tx); err != nil {
+		tx.Rollback()
+		return err
+	}
+	tx.Commit()
+	return nil
+}
+
+// RunxWithContext begins transaction with context.Conntext around TxnxFunc.
+// It returns error and rollbacks if TxnxFunc is failed.
+// It commits if TxnxFunc is successed.
+func RunxWithContext(ctx context.Context, db SQLx, f TxnxFunc) error {
+	tx, err := db.BeginTxx(ctx)
 	if err != nil {
 		return err
 	}
