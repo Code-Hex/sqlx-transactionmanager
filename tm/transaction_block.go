@@ -10,13 +10,13 @@ import (
 // SQL interface implements for *sql.DB or wrapped it.
 type SQL interface {
 	Begin() (*sql.Tx, error)
-	BeginTx(context.Context) (*sql.Tx, error)
+	BeginTx(context.Context, *sql.TxOptions) (*sql.Tx, error)
 }
 
 // SQLx interface implements for *sqlx.DB or wrapped it.
 type SQLx interface {
 	Beginx() (*sqlx.Tx, error)
-	BeginTxx(context.Context) (*sqlx.Tx, error)
+	BeginTxx(context.Context, *sql.TxOptions) (*sqlx.Tx, error)
 }
 
 // Executor interface implements for *sql.Tx or wrapped it.
@@ -88,8 +88,8 @@ func Run(db SQL, f TxnFunc) error {
 // RunWithContext begins transaction with context.Conntext around TxnFunc.
 // It returns error and rollbacks if TxnFunc is failed.
 // It commits if TxnFunc is successed.
-func RunWithContext(ctx context.Context, db SQL, f TxnFunc) error {
-	tx, err := db.BeginTx(ctx)
+func RunWithContext(ctx context.Context, opts *sql.TxOptions, db SQL, f TxnFunc) error {
+	tx, err := db.BeginTx(ctx, opts)
 	if err != nil {
 		return err
 	}
@@ -120,8 +120,8 @@ func Runx(db SQLx, f TxnxFunc) error {
 // RunxWithContext begins transaction with context.Conntext around TxnxFunc.
 // It returns error and rollbacks if TxnxFunc is failed.
 // It commits if TxnxFunc is successed.
-func RunxWithContext(ctx context.Context, db SQLx, f TxnxFunc) error {
-	tx, err := db.BeginTxx(ctx)
+func RunxWithContext(ctx context.Context, opts *sql.TxOptions, db SQLx, f TxnxFunc) error {
+	tx, err := db.BeginTxx(ctx, opts)
 	if err != nil {
 		return err
 	}
