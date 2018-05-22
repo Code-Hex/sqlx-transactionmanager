@@ -9,6 +9,8 @@ Transaction handling for database it extends https://github.com/jmoiron/sqlx
 
 ## Synopsis
 
+### Standard
+
 ```go
 db := sqlx.MustOpen("mysql", dsn())
 
@@ -42,11 +44,44 @@ if err := tx.Commit(); err != nil {
 fmt.Println(p)
 ```
 
+### Transaction block
+
+```go
+var p Person
+if err := tm.Run(db, func(tx tm.Executor) error {
+    _, err := tx.Exec("INSERT INTO person (first_name, last_name, email) VALUES (?, ?, ?)", "Al", "Paca", "x00.x7f@gmail.com")
+    if err != nil {
+        return err
+    }
+    _, err = tx.Exec("UPDATE person SET email = ? WHERE first_name = ? AND last_name = ?", "x@h.com", "Al", "Paca")
+    if err != nil {
+        return err
+    }
+
+    return tx.QueryRow("SELECT * FROM person LIMIT 1").Scan(&p.FirstName, &p.LastName, &p.Email, &p.AddedAt)
+}); err != nil {
+    panic(err)
+}
+println(&p)
+
+if err := tm.Runx(db, func(tx tm.Executorx) error {
+    tx.MustExec(tx.Rebind("INSERT INTO person (first_name, last_name, email) VALUES (?, ?, ?)"), "Code", "Hex", "x00.x7f@gmail.com")
+    tx.MustExec(tx.Rebind("UPDATE person SET email = ? WHERE first_name = ? AND last_name = ?"), "a@b.com", "Code", "Hex")
+    if err := tx.Get(&p, "SELECT * FROM person ORDER BY first_name DESC LIMIT 1"); err != nil {
+        return err
+    }
+    return nil
+}); err != nil {
+    panic(err)
+}
+println(&p)
+```
+
 ## Description
 
 sqlx-transactionmanager is a simple transaction manager. This package provides nested transaction management on multi threads.
 
-See more details [example code](https://github.com/Code-Hex/sqlx-transactionmanager/blob/master/eg/main.go#L57-L87) if you want to know how to use this.
+See more details [example for extends sqlx](https://github.com/Code-Hex/sqlx-transactionmanager/blob/master/eg/main.go#L57-L87) or [example for transaction block](https://github.com/Code-Hex/sqlx-transactionmanager/blob/master/eg/tm/main.go#L58-L90) if you want to know how to use this.
 
 ## Install
 

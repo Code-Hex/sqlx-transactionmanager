@@ -56,7 +56,6 @@ func main() {
 }
 
 // DoTransaction is example for transaction
-// See transaction_manager_test.go if you want to know detail.
 func DoTransaction(db *sqlx.DB) func(*sqlx.DB) {
 	return func(db *sqlx.DB) {
 		var p Person
