@@ -172,6 +172,13 @@ func (t *Txm) MustRollback() {
 	}
 }
 
+// In expands slice values in args, returning the modified query string
+// and a new arg list that can be executed by a database. The `query` should
+// use the `?` bindVar.  The return value uses the `?` bindVar.
+func In(query string, args ...interface{}) (string, []interface{}, error) {
+	return sqlxx.In(query, args...)
+}
+
 // reset resets some counter for transaction manager.
 func (t *Txm) reset() {
 	t.rollbacked.reset()
