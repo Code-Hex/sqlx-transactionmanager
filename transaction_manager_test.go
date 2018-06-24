@@ -264,15 +264,12 @@ func TestNestedRollback(t *testing.T) {
 				t.Fatal(err)
 			}
 		}
-		if tx == nil {
-			t.Fatal("Failed to return tx")
-		}
 		defer tx.MustRollback()
 		tx.MustExec(tx.Rebind("INSERT INTO person (first_name, last_name, email) VALUES (?, ?, ?)"), "Code", "Hex", "x00.x7f@gmail.com")
 		if !tx.activeTx.has() {
 			t.Fatal("Failed having active transaction in nested BEGIN")
 		}
-		tx.Commit()
+		panic("Something failed")
 	}
 	RunWithSchema(defaultSchema, t, func(db *DB, t *testing.T) {
 		func() {
@@ -283,9 +280,6 @@ func TestNestedRollback(t *testing.T) {
 			defer tx.MustRollback()
 			tx.MustExec(tx.Rebind("INSERT INTO person (first_name, last_name, email) VALUES (?, ?, ?)"), "Code", "Hex", "x00.x7f@gmail.com")
 
-			// I will try begin 4 times
-			nested(db)
-			nested(db)
 			nestedmore := func(db *DB) {
 				tx, err := db.BeginTxm()
 				if err != nil {
@@ -293,14 +287,12 @@ func TestNestedRollback(t *testing.T) {
 						t.Fatal(err)
 					}
 				}
-				nested(db)
-				if tx == nil {
-					t.Fatal("Failed to return tx")
-				}
 				defer tx.MustRollback()
+				nested(db)
 				if !tx.activeTx.has() {
 					t.Fatal("Failed having active transaction in nested BEGIN")
 				}
+				tx.Commit()
 			}
 			nestedmore(db)
 		}()
