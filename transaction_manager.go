@@ -134,7 +134,7 @@ func (db *DB) MustBeginTxmx(ctx context.Context, opts *sql.TxOptions) (*Txm, err
 // Commit commits the transaction.
 func (t *Txm) Commit() error {
 	if t.rollbacked.already() {
-		return new(NestedCommitErr)
+		panic(new(NestedCommitErr))
 	}
 	t.activeTx.decrement()
 	if !t.activeTx.has() {
@@ -166,9 +166,11 @@ func (t *Txm) Rollback() error {
 
 // MustRollback is like Rollback but panics if Rollback is failed.
 func (t *Txm) MustRollback() {
-	defer t.reset()
-	if err := t.Tx.Rollback(); err != nil {
-		panic(err)
+	if p := recover(); p != nil {
+		if err := t.Tx.Rollback(); err != nil {
+			panic(err)
+		}
+		t.reset()
 	}
 }
 
