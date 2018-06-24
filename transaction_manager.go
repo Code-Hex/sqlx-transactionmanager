@@ -143,14 +143,6 @@ func (t *Txm) Commit() error {
 	return nil
 }
 
-// MustCommit is like Commit but panics if Commit is failed.
-func (t *Txm) MustCommit() {
-	defer t.reset()
-	if err := t.Tx.Commit(); err != nil {
-		panic(err)
-	}
-}
-
 // Rollback rollbacks the transaction.
 func (t *Txm) Rollback() error {
 	if !t.activeTx.has() {
@@ -164,7 +156,11 @@ func (t *Txm) Rollback() error {
 	return t.Tx.Rollback()
 }
 
-// MustRollback is like Rollback but panics if Rollback is failed.
+// MustRollback should be used with defer.
+// Because If you met with code of a nested transaction,
+// trying to handle all of them and it will be fairly complicated.
+// In order to do this issue to be simple, we should use panic() and
+// handle it with defer.
 func (t *Txm) MustRollback() {
 	if p := recover(); p != nil {
 		if err := t.Tx.Rollback(); err != nil {
