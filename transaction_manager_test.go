@@ -267,64 +267,42 @@ func TestNestedRollback(t *testing.T) {
 		if tx == nil {
 			t.Fatal("Failed to return tx")
 		}
+		defer tx.MustRollback()
+		tx.MustExec(tx.Rebind("INSERT INTO person (first_name, last_name, email) VALUES (?, ?, ?)"), "Code", "Hex", "x00.x7f@gmail.com")
 		if !tx.activeTx.has() {
 			t.Fatal("Failed having active transaction in nested BEGIN")
 		}
 	}
 	RunWithSchema(defaultSchema, t, func(db *DB, t *testing.T) {
-		tx, err := db.BeginTxm()
-		if err != nil {
-			t.Fatal(err)
-		}
-		tx.MustExec(tx.Rebind("INSERT INTO person (first_name, last_name, email) VALUES (?, ?, ?)"), "Code", "Hex", "x00.x7f@gmail.com")
-		tx.MustExec(tx.Rebind("UPDATE person SET email = ? WHERE first_name = ? AND last_name = ?"), "a@b.com", "Code", "Hex")
-
-		// I will try begin 4 times
-		nested(db)
-		nested(db)
-		nestedmore := func(db *DB) {
+		func() {
 			tx, err := db.BeginTxm()
 			if err != nil {
-				if _, ok := err.(*NestedBeginTxErr); !ok {
-					t.Fatal(err)
-				}
-			}
-			nested(db)
-			if tx == nil {
-				t.Fatal("Failed to return tx")
-			}
-			if !tx.activeTx.has() {
-				t.Fatal("Failed having active transaction in nested BEGIN")
-			}
-		}
-		nestedmore(db)
-
-		tx.Rollback() // count rollbacked +1, It will not rollback
-
-		if tx.rollbacked.times() != 1 {
-			t.Fatalf("Failed to count rollbacked: %d, expected 1", tx.rollbacked.times())
-		}
-
-		if e, ok := tx.Commit().(*NestedCommitErr); e == nil || !ok {
-			t.Fatal("Failed to get nested commit err")
-		}
-
-		tx.rollbacked.reset()
-
-		// 4 times of nested begin
-		// We should stop when count is 1
-		// because rollback can be done per transaction
-		for i := 1; i < 4; i++ {
-			if err := tx.Commit(); err != nil {
 				t.Fatal(err)
 			}
-		}
+			defer tx.MustRollback()
+			tx.MustExec(tx.Rebind("INSERT INTO person (first_name, last_name, email) VALUES (?, ?, ?)"), "Code", "Hex", "x00.x7f@gmail.com")
 
-		if tx.activeTx.get() != 1 {
-			t.Fatalf("Failed to decrease count: %d", tx.activeTx.get())
-		}
-
-		tx.Rollback() // activeTx count is 1, So it will rollback
+			// I will try begin 4 times
+			nested(db)
+			nested(db)
+			nestedmore := func(db *DB) {
+				tx, err := db.BeginTxm()
+				if err != nil {
+					if _, ok := err.(*NestedBeginTxErr); !ok {
+						t.Fatal(err)
+					}
+				}
+				nested(db)
+				if tx == nil {
+					t.Fatal("Failed to return tx")
+				}
+				defer tx.MustRollback()
+				if !tx.activeTx.has() {
+					t.Fatal("Failed having active transaction in nested BEGIN")
+				}
+			}
+			nestedmore(db)
+		}()
 
 		var author Person
 		if err := db.Get(&author, "SELECT * FROM person LIMIT 1"); err != sql.ErrNoRows {
