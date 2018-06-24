@@ -272,6 +272,7 @@ func TestNestedRollback(t *testing.T) {
 		if !tx.activeTx.has() {
 			t.Fatal("Failed having active transaction in nested BEGIN")
 		}
+		tx.Commit()
 	}
 	RunWithSchema(defaultSchema, t, func(db *DB, t *testing.T) {
 		func() {
