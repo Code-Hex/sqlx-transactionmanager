@@ -9,7 +9,8 @@ Transaction handling for database it extends https://github.com/jmoiron/sqlx
 
 ## Synopsis
 
-### Standard
+<details>
+  <summary>Standard</summary>
 
 ```go
 db := sqlx.MustOpen("mysql", dsn())
@@ -43,8 +44,57 @@ if err := tx.Commit(); err != nil {
 
 fmt.Println(p)
 ```
+</details>
 
-### Transaction block
+<details>
+  <summary>Nested Transaction</summary>
+
+```go
+db := sqlx.MustOpen("mysql", dsn())
+
+// starts transaction statements
+tx, err := db.BeginTxm()
+if err != nil {
+    panic(err)
+}
+// Do rollbacks if fail something in nested transaction.
+defer tx.MustRollback()
+
+// Nested transaction.
+// To be simple, we will cause panic if something sql process if failed.
+func() {
+    tx2, _ := db.BeginTxm()
+    defer tx2.MustRollback()
+    func() {
+        tx3, _ := db.BeginTxm()
+        defer tx3.MustRollback()
+        tx3.MustExec("INSERT INTO person (first_name, last_name, email) VALUES (?, ?, ?)", "Code", "Hex", "x00.x7f@gmail.com")
+        if err := tx3.Commit(); err != nil {
+            panic(err)
+        }
+    }()
+    tx2.MustExec("UPDATE person SET email = ? WHERE first_name = ? AND last_name = ?", "a@b.com", "Code", "Hex")
+    if err := tx2.Commit(); err != nil {
+        panic(err)
+    }
+}()
+
+var p Person
+if err := tx.Get(&p, "SELECT * FROM person LIMIT 1"); err != nil {
+    panic(err)
+}
+
+// transaction commits
+if err := tx.Commit(); err != nil {
+    panic(err)
+}
+
+fmt.Println(p)
+```
+</details>
+
+<details>
+  <summary>Transaction block</summary>
 
 ```go
 var p Person
@@ -76,6 +126,7 @@ if err := tm.Runx(db, func(tx tm.Executorx) error {
 }
 println(&p)
 ```
+</details>
 
 ## Description
 
