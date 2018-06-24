@@ -163,7 +163,7 @@ func (t *Txm) Rollback() error {
 // handle it with defer.
 func (t *Txm) MustRollback() {
 	if p := recover(); p != nil {
-		if err := t.Tx.Rollback(); err != nil {
+		if err := t.Rollback(); err != nil {
 			panic(err)
 		}
 		t.reset()
