@@ -28,7 +28,7 @@ func dsn() string {
 
 func loadDefaultFixture(db *sqlx.DB) {
 	tx := db.MustBeginTxm()
-	defer tx.MustRollback()
+	defer tx.Rollback()
 	// If you want to know about tx.Rebind, See http://jmoiron.github.io/sqlx/#bindvars
 	tx.MustExec(tx.Rebind("INSERT INTO person (first_name, last_name, email) VALUES (?, ?, ?)"), "Jason", "Moiron", "jmoiron@jmoiron.net")
 	tx.MustExec(tx.Rebind("INSERT INTO person (first_name, last_name, email) VALUES (?, ?, ?)"), "John", "Doe", "johndoeDNE@gmail.net")

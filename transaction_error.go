@@ -12,11 +12,3 @@ type NestedCommitErr struct{}
 func (n *NestedCommitErr) Error() string {
 	return commitErrMsg
 }
-
-// NestedBeginTxErr is an error type to notice that
-// restart transaction in already begun transaction.
-type NestedBeginTxErr struct{}
-
-func (n *NestedBeginTxErr) Error() string {
-	return beginTxErrMsg
-}

@@ -37,7 +37,11 @@ func Open(driverName, dataSourceName string) (*DB, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &DB{DB: db, activeTx: &activeTx{}}, err
+	return &DB{
+		DB:         db,
+		activeTx:   &activeTx{},
+		rollbacked: &rollbacked{},
+	}, nil
 }
 
 // MustOpen returns only pointer of DB struct to manage transaction.
@@ -67,7 +71,7 @@ func (db *DB) setTx(tx *sqlxx.Tx) {
 	db.tx = &Txm{
 		Tx:         tx,
 		activeTx:   db.activeTx,
-		rollbacked: &rollbacked{},
+		rollbacked: db.rollbacked,
 	}
 }
 
@@ -90,7 +94,7 @@ func (db *DB) BeginTxm() (*Txm, error) {
 		db.setTx(tx)
 		return db.getTxm(), nil
 	}
-	return db.getTxm(), new(NestedBeginTxErr)
+	return db.getTxm(), nil
 }
 
 // MustBeginTxm is like BeginTxm but panics
@@ -118,7 +122,7 @@ func (db *DB) BeginTxmx(ctx context.Context, opts *sql.TxOptions) (*Txm, error) 
 		db.setTx(tx)
 		return db.getTxm(), nil
 	}
-	return db.getTxm(), new(NestedBeginTxErr)
+	return db.getTxm(), nil
 }
 
 // MustBeginTxmx is like BeginTxmx but panics
@@ -134,21 +138,17 @@ func (db *DB) MustBeginTxmx(ctx context.Context, opts *sql.TxOptions) (*Txm, err
 // Commit commits the transaction.
 func (t *Txm) Commit() error {
 	if t.rollbacked.already() {
-		return new(NestedCommitErr)
+		panic(new(NestedCommitErr))
 	}
 	t.activeTx.decrement()
 	if !t.activeTx.has() {
-		return t.Tx.Commit()
+		if err := t.Tx.Commit(); err != nil {
+			return err
+		}
+		t.reset()
+		return nil
 	}
 	return nil
-}
-
-// MustCommit is like Commit but panics if Commit is failed.
-func (t *Txm) MustCommit() {
-	defer t.reset()
-	if err := t.Tx.Commit(); err != nil {
-		panic(err)
-	}
 }
 
 // Rollback rollbacks the transaction.
@@ -162,14 +162,6 @@ func (t *Txm) Rollback() error {
 		return nil
 	}
 	return t.Tx.Rollback()
-}
-
-// MustRollback is like Rollback but panics if Rollback is failed.
-func (t *Txm) MustRollback() {
-	defer t.reset()
-	if err := t.Tx.Rollback(); err != nil {
-		panic(err)
-	}
 }
 
 // In expands slice values in args, returning the modified query string
