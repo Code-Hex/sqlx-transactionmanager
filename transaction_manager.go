@@ -164,20 +164,6 @@ func (t *Txm) Rollback() error {
 	return t.Tx.Rollback()
 }
 
-// MustRollback should be used with defer.
-// Because If you met with code of a nested transaction,
-// trying to handle all of them and it will be fairly complicated.
-// In order to do this issue to be simple, we should use panic() and
-// handle it with defer.
-func (t *Txm) MustRollback() {
-	if p := recover(); p != nil {
-		if err := t.Rollback(); err != nil {
-			panic(err)
-		}
-		t.reset()
-	}
-}
-
 // In expands slice values in args, returning the modified query string
 // and a new arg list that can be executed by a database. The `query` should
 // use the `?` bindVar.  The return value uses the `?` bindVar.

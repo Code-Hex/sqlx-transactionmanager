@@ -268,7 +268,7 @@ func TestNestedRollback(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		defer tx.MustRollback()
+		defer tx.Rollback()
 		tx.MustExec(tx.Rebind("INSERT INTO person (first_name, last_name, email) VALUES (?, ?, ?)"), "Code", "Hex", "x00.x7f@gmail.com")
 		if !tx.activeTx.has() {
 			t.Fatal("Failed having active transaction in nested BEGIN")
@@ -281,27 +281,33 @@ func TestNestedRollback(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		defer tx.MustRollback()
+		defer tx.Rollback()
 		nested(db)
+		tx.MustExec(tx.Rebind("INSERT INTO person (first_name, last_name, email) VALUES (?, ?, ?)"), "Code", "Hex", "x00.x7f@gmail.com")
 		tx.Commit() // maybe will not be reach
 	}
 	RunWithSchema(defaultSchema, t, func(db *DB, t *testing.T) {
 		func() {
-			tx, err := db.BeginTxm()
-			if err != nil {
-				t.Fatal(err)
-			}
-			defer tx.MustRollback()
-			tx.MustExec(tx.Rebind("INSERT INTO person (first_name, last_name, email) VALUES (?, ?, ?)"), "Code", "Hex", "x00.x7f@gmail.com")
-			nestedmore(db)
-			tx.Commit() // maybe will not be reach
+			defer func() {
+				r := recover()
+				if s, ok := r.(string); !(ok && s != "Something failed") {
+					t.Fatalf("Failed to cause panic: %s", s)
+				}
+			}()
+			func() {
+				tx, err := db.BeginTxm()
+				if err != nil {
+					t.Fatal(err)
+				}
+				defer tx.Rollback()
+				tx.MustExec(tx.Rebind("INSERT INTO person (first_name, last_name, email) VALUES (?, ?, ?)"), "Code", "Hex", "x00.x7f@gmail.com")
+				nestedmore(db)
+				tx.Commit() // maybe will not be reach
+			}()
 		}()
 
 		var author Person
 		if err := db.Get(&author, "SELECT * FROM person WHERE first_name = 'Code' AND last_name = 'Hex'"); err != sql.ErrNoRows {
-			if &author != nil {
-				fmt.Printf("%s, %s\n", author.FirstName, author.LastName)
-			}
 			t.Fatal(
 				errors.Errorf("rollback test is failed\n    %s\n    %s\n",
 					fmt.Sprintf("rollbacked in nested transaction: %d", db.rollbacked.times()),
