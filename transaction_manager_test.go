@@ -278,6 +278,7 @@ func TestNestedRollback(t *testing.T) {
 	}
 	RunWithSchema(defaultSchema, t, func(db *DB, t *testing.T) {
 		func() {
+			// Panic handler
 			defer func() {
 				r := recover()
 				if s, ok := r.(string); !ok || s != "Something failed" {

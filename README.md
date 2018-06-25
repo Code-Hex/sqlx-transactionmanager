@@ -34,12 +34,12 @@ tx.MustExec("UPDATE person SET email = ? WHERE first_name = ? AND last_name = ?"
 
 var p Person
 if err := tx.Get(&p, "SELECT * FROM person LIMIT 1"); err != nil {
-    panic(err)
+    return err
 }
 
 // transaction commits
 if err := tx.Commit(); err != nil {
-    panic(err)
+    return err
 }
 
 fmt.Println(p)
@@ -52,41 +52,44 @@ fmt.Println(p)
 ```go
 db := sqlx.MustOpen("mysql", dsn())
 
-// starts transaction statements
-tx, err := db.BeginTxm()
-if err != nil {
-    panic(err)
-}
-// Do rollbacks if fail something in nested transaction.
-defer tx.MustRollback()
-
-// Nested transaction.
-// To be simple, we will cause panic if something sql process if failed.
 func() {
-    tx2, _ := db.BeginTxm()
-    defer tx2.MustRollback()
+    // We should prepare to recover from panic.
+    defer func() {
+        if r := recover(); r != nil {
+            // Do something recover process
+        }
+    }()
+    // Start nested transaction.
+    // To be simple, we will cause panic if something sql process if failed.
     func() {
-        tx3, _ := db.BeginTxm()
-        defer tx3.MustRollback()
-        tx3.MustExec("INSERT INTO person (first_name, last_name, email) VALUES (?, ?, ?)", "Code", "Hex", "x00.x7f@gmail.com")
-        if err := tx3.Commit(); err != nil {
+        // starts transaction statements
+        tx, err := db.BeginTxm()
+        if err != nil {
+            panic(err)
+        }
+        // Do rollbacks if fail something in nested transaction.
+        defer tx.Rollback()
+        func() {
+            // You don't need error handle in already began transaction.
+            tx2, _ := db.BeginTxm()
+            defer tx2.Rollback()
+            tx2.MustExec("INSERT INTO person (first_name, last_name, email) VALUES (?, ?, ?)", "Code", "Hex", "x00.x7f@gmail.com")
+            // Do something processing.
+            // You should cause panic() if something failed.
+            if err := tx2.Commit(); err != nil {
+                panic(err)
+            }
+        }()
+        tx.MustExec("UPDATE person SET email = ? WHERE first_name = ? AND last_name = ?", "a@b.com", "Code", "Hex")
+        if err := tx.Commit(); err != nil {
             panic(err)
         }
     }()
-    tx2.MustExec("UPDATE person SET email = ? WHERE first_name = ? AND last_name = ?", "a@b.com", "Code", "Hex")
-    if err := tx2.Commit(); err != nil {
-        panic(err)
-    }
 }()
 
 var p Person
 if err := tx.Get(&p, "SELECT * FROM person LIMIT 1"); err != nil {
-    panic(err)
-}
-
-// transaction commits
-if err := tx.Commit(); err != nil {
-    panic(err)
+    return err
 }
 
 fmt.Println(p)
