@@ -165,6 +165,8 @@ func TestCommit(t *testing.T) {
 		if author2.FirstName != "Al" || author2.LastName != "paca" {
 			t.Fatal("Failed to test commit2")
 		}
+		fmt.Fprintf(os.Stderr, "rollbacked in nested transaction: %d\n", db.rollbacked.times())
+		fmt.Fprintf(os.Stderr, "active tx counter: %d\n", db.activeTx.get())
 	})
 }
 
