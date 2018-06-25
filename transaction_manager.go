@@ -142,7 +142,11 @@ func (t *Txm) Commit() error {
 	}
 	t.activeTx.decrement()
 	if !t.activeTx.has() {
-		return t.Tx.Commit()
+		if err := t.Tx.Commit(); err != nil {
+			return err
+		}
+		t.reset()
+		return nil
 	}
 	return nil
 }
