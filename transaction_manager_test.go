@@ -124,9 +124,13 @@ func TestCommit(t *testing.T) {
 		}
 		tx.MustExec(tx.Rebind("INSERT INTO person (first_name, last_name, email) VALUES (?, ?, ?)"), "Code", "Hex", "x00.x7f@gmail.com")
 		tx.MustExec(tx.Rebind("UPDATE person SET email = ? WHERE first_name = ? AND last_name = ?"), "a@b.com", "Code", "Hex")
+		fmt.Fprintf(os.Stderr, "1rollbacked in nested transaction: %d\n", db.rollbacked.times())
+		fmt.Fprintf(os.Stderr, "1active tx counter: %d\n", db.activeTx.get())
 		if err := tx.Commit(); err != nil {
 			t.Fatal(err)
 		}
+		fmt.Fprintf(os.Stderr, "1rollbacked in nested transaction: %d\n", db.rollbacked.times())
+		fmt.Fprintf(os.Stderr, "1active tx counter: %d\n", db.activeTx.get())
 
 		var author Person
 		if err := db.Get(&author, "SELECT * FROM person LIMIT 1"); err != nil {
@@ -149,9 +153,13 @@ func TestCommit(t *testing.T) {
 		tx2.MustExec(tx.Rebind("DELETE FROM person"))
 		tx2.MustExec(tx.Rebind("INSERT INTO person (first_name, last_name, email) VALUES (?, ?, ?)"), "Al", "paca", "kei@gmail.com")
 		tx2.MustExec(tx.Rebind("UPDATE person SET email = ? WHERE first_name = ? AND last_name = ?"), "c@d.com", "Al", "paca")
+		fmt.Fprintf(os.Stderr, "2rollbacked in nested transaction: %d\n", db.rollbacked.times())
+		fmt.Fprintf(os.Stderr, "2active tx counter: %d\n", db.activeTx.get())
 		if err := tx2.Commit(); err != nil {
 			t.Fatal(err)
 		}
+		fmt.Fprintf(os.Stderr, "2rollbacked in nested transaction: %d\n", db.rollbacked.times())
+		fmt.Fprintf(os.Stderr, "2active tx counter: %d\n", db.activeTx.get())
 
 		var author2 Person
 		if err := db.Get(&author2, "SELECT * FROM person LIMIT 1"); err != nil {
