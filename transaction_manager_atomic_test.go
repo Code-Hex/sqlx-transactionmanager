@@ -18,8 +18,8 @@ func TestAtomicCount(t *testing.T) {
 			go func(d *DB) {
 				defer wg.Done()
 				_, err := db.BeginTxm()
-				if e, ok := err.(*NestedBeginTxErr); !ok {
-					panic(e)
+				if err != nil {
+					panic(err)
 				}
 			}(db)
 		}

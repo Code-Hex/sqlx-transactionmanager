@@ -196,9 +196,7 @@ func TestNestedCommit(t *testing.T) {
 	nested := func(db *DB) {
 		tx, err := db.BeginTxm()
 		if err != nil {
-			if _, ok := err.(*NestedBeginTxErr); !ok {
-				t.Fatal(err)
-			}
+			t.Fatal(err)
 		}
 		if tx == nil {
 			t.Fatal("Failed to return tx")
@@ -221,9 +219,7 @@ func TestNestedCommit(t *testing.T) {
 		nestedmore := func(db *DB) {
 			tx, err := db.BeginTxm()
 			if err != nil {
-				if _, ok := err.(*NestedBeginTxErr); !ok {
-					t.Fatal(err)
-				}
+				t.Fatal(err)
 			}
 			nested(db)
 			if tx == nil {
@@ -260,9 +256,7 @@ func TestNestedRollback(t *testing.T) {
 	nested := func(db *DB) {
 		tx, err := db.BeginTxm()
 		if err != nil {
-			if _, ok := err.(*NestedBeginTxErr); !ok {
-				t.Fatal(err)
-			}
+			t.Fatal(err)
 		}
 		defer tx.MustRollback()
 		tx.MustExec(tx.Rebind("INSERT INTO person (first_name, last_name, email) VALUES (?, ?, ?)"), "Code", "Hex", "x00.x7f@gmail.com")
@@ -283,9 +277,7 @@ func TestNestedRollback(t *testing.T) {
 			nestedmore := func(db *DB) {
 				tx, err := db.BeginTxm()
 				if err != nil {
-					if _, ok := err.(*NestedBeginTxErr); !ok {
-						t.Fatal(err)
-					}
+					t.Fatal(err)
 				}
 				defer tx.MustRollback()
 				nested(db)

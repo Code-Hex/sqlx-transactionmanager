@@ -90,7 +90,7 @@ func (db *DB) BeginTxm() (*Txm, error) {
 		db.setTx(tx)
 		return db.getTxm(), nil
 	}
-	return db.getTxm(), new(NestedBeginTxErr)
+	return db.getTxm(), nil
 }
 
 // MustBeginTxm is like BeginTxm but panics
@@ -118,7 +118,7 @@ func (db *DB) BeginTxmx(ctx context.Context, opts *sql.TxOptions) (*Txm, error) 
 		db.setTx(tx)
 		return db.getTxm(), nil
 	}
-	return db.getTxm(), new(NestedBeginTxErr)
+	return db.getTxm(), nil
 }
 
 // MustBeginTxmx is like BeginTxmx but panics
