@@ -290,7 +290,7 @@ func TestNestedRollback(t *testing.T) {
 		func() {
 			defer func() {
 				r := recover()
-				if s, ok := r.(string); !(ok && s != "Something failed") {
+				if s, ok := r.(string); !ok || s != "Something failed" {
 					t.Fatalf("Failed to cause panic: %s", s)
 				}
 			}()
