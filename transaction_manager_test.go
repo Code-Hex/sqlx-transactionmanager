@@ -264,6 +264,16 @@ func TestNestedRollback(t *testing.T) {
 			t.Fatal("Failed having active transaction in nested BEGIN")
 		}
 		panic("Something failed")
+		// Maybe we will `tx.Commit()` at last
+	}
+	nestedmore := func(db *DB) {
+		tx, err := db.BeginTxm()
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer tx.MustRollback()
+		nested(db)
+		tx.Commit()
 	}
 	RunWithSchema(defaultSchema, t, func(db *DB, t *testing.T) {
 		func() {
@@ -273,20 +283,8 @@ func TestNestedRollback(t *testing.T) {
 			}
 			defer tx.MustRollback()
 			tx.MustExec(tx.Rebind("INSERT INTO person (first_name, last_name, email) VALUES (?, ?, ?)"), "Code", "Hex", "x00.x7f@gmail.com")
-
-			nestedmore := func(db *DB) {
-				tx, err := db.BeginTxm()
-				if err != nil {
-					t.Fatal(err)
-				}
-				defer tx.MustRollback()
-				nested(db)
-				if !tx.activeTx.has() {
-					t.Fatal("Failed having active transaction in nested BEGIN")
-				}
-				tx.Commit()
-			}
 			nestedmore(db)
+			tx.Commit()
 		}()
 
 		var author Person
