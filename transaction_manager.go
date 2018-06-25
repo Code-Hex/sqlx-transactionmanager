@@ -37,7 +37,11 @@ func Open(driverName, dataSourceName string) (*DB, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &DB{DB: db, activeTx: &activeTx{}}, err
+	return &DB{
+		DB:         db,
+		activeTx:   &activeTx{},
+		rollbacked: &rollbacked{},
+	}, nil
 }
 
 // MustOpen returns only pointer of DB struct to manage transaction.
@@ -67,7 +71,7 @@ func (db *DB) setTx(tx *sqlxx.Tx) {
 	db.tx = &Txm{
 		Tx:         tx,
 		activeTx:   db.activeTx,
-		rollbacked: &rollbacked{},
+		rollbacked: db.rollbacked,
 	}
 }
 
