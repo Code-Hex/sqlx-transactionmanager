@@ -299,7 +299,7 @@ func TestNestedRollback(t *testing.T) {
 
 		var author Person
 		if err := db.Get(&author, "SELECT * FROM person WHERE first_name = 'Code' AND last_name = 'Hex'"); err != sql.ErrNoRows {
-			if author != nil {
+			if &author != nil {
 				fmt.Printf("%s, %s\n", author.FirstName, author.LastName)
 			}
 			t.Fatal(
