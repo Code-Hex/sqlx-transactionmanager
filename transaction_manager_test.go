@@ -283,7 +283,7 @@ func TestNestedRollback(t *testing.T) {
 		}
 		defer tx.MustRollback()
 		nested(db)
-		tx.Commit()
+		tx.Commit() // maybe will not be reach
 	}
 	RunWithSchema(defaultSchema, t, func(db *DB, t *testing.T) {
 		func() {
@@ -294,11 +294,14 @@ func TestNestedRollback(t *testing.T) {
 			defer tx.MustRollback()
 			tx.MustExec(tx.Rebind("INSERT INTO person (first_name, last_name, email) VALUES (?, ?, ?)"), "Code", "Hex", "x00.x7f@gmail.com")
 			nestedmore(db)
-			tx.Commit()
+			tx.Commit() // maybe will not be reach
 		}()
 
 		var author Person
 		if err := db.Get(&author, "SELECT * FROM person WHERE first_name = 'Code' AND last_name = 'Hex'"); err != sql.ErrNoRows {
+			if author != nil {
+				fmt.Printf("%s, %s\n", author.FirstName, author.LastName)
+			}
 			t.Fatal(
 				errors.Errorf("rollback test is failed\n    %s\n    %s\n",
 					fmt.Sprintf("rollbacked in nested transaction: %d", db.rollbacked.times()),
