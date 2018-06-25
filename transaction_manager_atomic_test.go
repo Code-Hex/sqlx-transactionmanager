@@ -1,6 +1,7 @@
 package sqlx
 
 import (
+	"fmt"
 	"sync"
 	"testing"
 )
@@ -13,7 +14,7 @@ func TestAtomicCount(t *testing.T) {
 		}
 		var wg sync.WaitGroup
 		times := 1000000
-		for i := 1; i < times; i++ {
+		for i := 1; i <= times; i++ {
 			wg.Add(1)
 			go func(d *DB) {
 				defer wg.Done()
@@ -26,13 +27,17 @@ func TestAtomicCount(t *testing.T) {
 		wg.Wait()
 
 		if uint64(times) != db.activeTx.get() {
-			t.Fatalf("Failed to atomic count in db activeTx: %d, expected %d", db.activeTx.get(), times)
+			panic(
+				fmt.Sprintf("Failed to atomic count in db activeTx: %d, expected %d", db.activeTx.get(), times),
+			)
 		}
 		if uint64(times) != tx.activeTx.get() {
-			t.Fatalf("Failed to atomic count in tx activeTx: %d, expected %d", tx.activeTx.get(), times)
+			panic(
+				fmt.Sprintf("Failed to atomic count in tx activeTx: %d, expected %d", tx.activeTx.get(), times),
+			)
 		}
 
-		for i := 1; i < times; i++ {
+		for i := 1; i <= times; i++ {
 			wg.Add(1)
 			go func(txm *Txm) {
 				defer wg.Done()
@@ -47,5 +52,6 @@ func TestAtomicCount(t *testing.T) {
 		if err := tx.Rollback(); tx.activeTx.has() || err != nil {
 			t.Fatalf("Failed to many rollback: error(%s), activeTx(%d)", err, tx.activeTx.get())
 		}
+		tx.reset()
 	})
 }
