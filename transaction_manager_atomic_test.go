@@ -14,7 +14,7 @@ func TestAtomicCount(t *testing.T) {
 		}
 		var wg sync.WaitGroup
 		times := 1000000
-		for i := 1; i <= times; i++ {
+		for i := 1; i < times; i++ {
 			wg.Add(1)
 			go func(d *DB) {
 				defer wg.Done()
