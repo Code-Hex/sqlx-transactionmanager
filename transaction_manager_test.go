@@ -298,7 +298,7 @@ func TestNestedRollback(t *testing.T) {
 		}()
 
 		var author Person
-		if err := db.Get(&author, "SELECT * FROM person LIMIT 1"); err != sql.ErrNoRows {
+		if err := db.Get(&author, "SELECT * FROM person WHERE first_name = 'Code' AND last_name = 'Hex'"); err != sql.ErrNoRows {
 			t.Fatal(
 				errors.Wrapf(err, "rollback test is failed\n    %s\n    %s\n",
 					fmt.Sprintf("rollbacked in nested transaction: %d", db.rollbacked.times()),
