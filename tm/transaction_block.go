@@ -81,8 +81,7 @@ func Run(db SQL, f TxnFunc) error {
 		tx.Rollback()
 		return err
 	}
-	tx.Commit()
-	return nil
+	return tx.Commit()
 }
 
 // RunWithContext begins transaction with context.Conntext around TxnFunc.
@@ -97,8 +96,7 @@ func RunWithContext(ctx context.Context, opts *sql.TxOptions, db SQL, f TxnFunc)
 		tx.Rollback()
 		return err
 	}
-	tx.Commit()
-	return nil
+	return tx.Commit()
 }
 
 // Runx begins transaction around TxnxFunc.
@@ -113,8 +111,7 @@ func Runx(db SQLx, f TxnxFunc) error {
 		tx.Rollback()
 		return err
 	}
-	tx.Commit()
-	return nil
+	return tx.Commit()
 }
 
 // RunxWithContext begins transaction with context.Conntext around TxnxFunc.
@@ -129,6 +126,5 @@ func RunxWithContext(ctx context.Context, opts *sql.TxOptions, db SQLx, f TxnxFu
 		tx.Rollback()
 		return err
 	}
-	tx.Commit()
-	return nil
+	return tx.Commit()
 }
